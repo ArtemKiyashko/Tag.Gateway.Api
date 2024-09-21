@@ -3,9 +3,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Tag.Gateway.Managers.Infrastructure;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
+using Tag.Gateway.Api;
 
 IConfiguration _functionConfig;
+QueuesOptions _queuesOptions = new();
 
 _functionConfig = new ConfigurationBuilder()
     .AddEnvironmentVariables()
@@ -18,22 +19,16 @@ var host = new HostBuilder()
         services.ConfigureFunctionsApplicationInsights();
         services.AddMvc().AddNewtonsoftJson();
 
-        var storageAccountUrl = _functionConfig.GetValue<string>("StorageAccountUrl");
-        var queueName = _functionConfig.GetValue<string>("QueueName");
+        _functionConfig.GetSection(nameof(QueuesOptions)).Bind(_queuesOptions);
 
-        if (string.IsNullOrEmpty(queueName))
-            throw new ArgumentException("QueueName cannot be empty");
-
-        if (!string.IsNullOrEmpty(storageAccountUrl))
-            services.AddQueueManager(queueName, new Uri(storageAccountUrl));
+        if (_queuesOptions.QueueAccountUri is not null)
+            services.AddQueueManager(_queuesOptions.QueueName, _queuesOptions.QueueAccountUri);
         else
         {
-            var storageAccountConnectionString = _functionConfig.GetValue<string>("StorageAccountConnectionString");
-            
-            if (string.IsNullOrEmpty(storageAccountConnectionString))
-                throw new ArgumentException("StorageAccountUrl or StorageAccountConnectionString required");
+            if (string.IsNullOrEmpty(_queuesOptions.QueueAccountConnectionString))
+                throw new ArgumentException($"{nameof(_queuesOptions.QueueAccountUri)} or {nameof(_queuesOptions.QueueAccountConnectionString)} required");
 
-            services.AddQueueManager(queueName, storageAccountConnectionString);
+            services.AddQueueManager(_queuesOptions.QueueName, _queuesOptions.QueueAccountConnectionString);
         }
     })
     .Build();
