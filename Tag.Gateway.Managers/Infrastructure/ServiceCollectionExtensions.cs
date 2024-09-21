@@ -13,7 +13,7 @@ public static class ServiceCollectionExtensions
         services.AddAzureClients(clientBuilder => {
             clientBuilder.AddServiceBusClient(messageAccountConnectionString);
             clientBuilder
-                .AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) => provider.GetService<ServiceBusClient>().CreateSender(topicName));
+                .AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) => provider.GetRequiredService<ServiceBusClient>().CreateSender(topicName));
         });
 
         services.AddBusinessogic();
@@ -28,7 +28,7 @@ public static class ServiceCollectionExtensions
             clientBuilder.UseCredential(new ManagedIdentityCredential());
             clientBuilder.AddServiceBusClientWithNamespace(messageAccountNamespace);
             clientBuilder
-                .AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) => provider.GetService<ServiceBusClient>().CreateSender(topicName));
+                .AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) => provider.GetRequiredService<ServiceBusClient>().CreateSender(topicName));
         });
 
         services.AddBusinessogic();
