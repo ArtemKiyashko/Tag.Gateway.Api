@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Tag.Gateway.Managers.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Tag.Gateway.Api;
+using Microsoft.Extensions.Logging;
 
 IConfiguration _functionConfig;
 ServiceBusOptions _servicebusOptions = new();
@@ -30,6 +31,18 @@ var host = new HostBuilder()
 
             services.AddMessageManagerConnectionString(_servicebusOptions.TopicName, _servicebusOptions.ServiceBusConnectionString);
         }
+
+        //ref: https://github.com/devops-circle/Azure-Functions-Logging-Tests/blob/master/Func.Isolated.Net7.With.AI/Program.cs#L46
+        services.Configure<LoggerFilterOptions>(options =>
+        {
+            var toRemove = options.Rules.FirstOrDefault(rule => rule.ProviderName
+                == "Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider");
+
+            if (toRemove is not null)
+            {
+                options.Rules.Remove(toRemove);
+            }
+        });
     })
     .Build();
 

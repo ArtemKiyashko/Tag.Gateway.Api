@@ -10,6 +10,7 @@ public static class TgMessageExtensions
         {
             UpdateType.Message => update.Message.Chat.Id.ToString(),
             UpdateType.EditedMessage => update.EditedMessage.Chat.Id.ToString(),
+            UpdateType.MyChatMember => update.MyChatMember.Chat.Id.ToString(),
             _ => Guid.NewGuid().ToString(),
         };
 }
