@@ -8,17 +8,17 @@ using FromBodyAttribute = Microsoft.Azure.Functions.Worker.Http.FromBodyAttribut
 
 namespace Tag.Gateway.Api
 {
-    public class Gateway(ILogger<Gateway> logger, IQueueManager queueManager)
+    public class Gateway(ILogger<Gateway> logger, IMessageManager messageManager)
     {
         private readonly ILogger<Gateway> _logger = logger;
-        private readonly IQueueManager _queueManager = queueManager;
+        private readonly IMessageManager _messageManager = messageManager;
 
         [Function("Gateway")]
         public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "post")] [FromBody]Update tgUpdate)
         {
             _logger.LogInformation($"Update received: {JsonConvert.SerializeObject(tgUpdate)}");
 
-            await _queueManager.PostMessageAsync(tgUpdate);
+            await _messageManager.PostMessageAsync(tgUpdate);
 
             return new OkResult();
         }

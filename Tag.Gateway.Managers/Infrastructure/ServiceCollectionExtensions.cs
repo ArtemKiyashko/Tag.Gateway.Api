@@ -1,5 +1,5 @@
 using Azure.Identity;
-using Azure.Storage.Queues;
+using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Tag.Gateway.Repositories;
@@ -8,51 +8,37 @@ namespace Tag.Gateway.Managers.Infrastructure;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddQueueManager(this IServiceCollection services, string queueName, string storageAccountConnectionString)
+    public static IServiceCollection AddMessageManagerConnectionString(this IServiceCollection services, string topicName, string messageAccountConnectionString)
     {
         services.AddAzureClients(clientBuilder => {
-            clientBuilder.UseCredential(new DefaultAzureCredential());
+            clientBuilder.AddServiceBusClient(messageAccountConnectionString);
             clientBuilder
-                .AddQueueServiceClient(storageAccountConnectionString)
-                .ConfigureOptions((options) => { options.MessageEncoding = QueueMessageEncoding.Base64;});
+                .AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) => provider.GetService<ServiceBusClient>().CreateSender(topicName));
         });
 
-        services.AddQueueClient(queueName);
+        services.AddBusinessogic();
 
         return services;
     }
 
-    public static IServiceCollection AddQueueManager(this IServiceCollection services, string queueName, Uri storageAccountUri)
+    public static IServiceCollection AddMessageManagerManagedIdentity(this IServiceCollection services, string topicName, string messageAccountNamespace)
     {
         services.AddAzureClients(clientBuilder =>
         {
-            clientBuilder.UseCredential(new DefaultAzureCredential());
+            clientBuilder.UseCredential(new ManagedIdentityCredential());
+            clientBuilder.AddServiceBusClientWithNamespace(messageAccountNamespace);
             clientBuilder
-                .AddQueueServiceClient(storageAccountUri)
-                .ConfigureOptions((options) => { options.MessageEncoding = QueueMessageEncoding.Base64; });
+                .AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) => provider.GetService<ServiceBusClient>().CreateSender(topicName));
         });
 
-        services.AddQueueClient(queueName);
+        services.AddBusinessogic();
 
         return services;
-    }
-
-    private static void AddQueueClient(this IServiceCollection services, string queueName)
-    {
-        services.AddScoped<QueueClient>((factory) =>
-        {
-            var service = factory.GetRequiredService<QueueServiceClient>();
-            var client = service.GetQueueClient(queueName);
-            client.CreateIfNotExists();
-            return client;
-        });
-
-        AddBusinessogic(services);
     }
 
     private static void AddBusinessogic(this IServiceCollection services)
     {
-        services.AddScoped<IQueueManager, QueueManager>();
-        services.AddScoped<IQueueRepository, QueueRepository>();
+        services.AddScoped<IMessageManager, MessageManager>();
+        services.AddScoped<IMessageRepository, MessageRepository>();
     }
 }

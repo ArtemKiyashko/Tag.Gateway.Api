@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Tag.Gateway.Api;
 
 IConfiguration _functionConfig;
-QueuesOptions _queuesOptions = new();
+ServiceBusOptions _servicebusOptions = new();
 
 _functionConfig = new ConfigurationBuilder()
     .AddEnvironmentVariables()
@@ -19,16 +19,16 @@ var host = new HostBuilder()
         services.ConfigureFunctionsApplicationInsights();
         services.AddMvc().AddNewtonsoftJson();
 
-        _functionConfig.GetSection(nameof(QueuesOptions)).Bind(_queuesOptions);
+        _functionConfig.GetSection(nameof(ServiceBusOptions)).Bind(_servicebusOptions);
 
-        if (_queuesOptions.QueueAccountUri is not null)
-            services.AddQueueManager(_queuesOptions.QueueName, _queuesOptions.QueueAccountUri);
+        if (!string.IsNullOrEmpty(_servicebusOptions.ServiceBusNamespace))
+            services.AddMessageManagerManagedIdentity(_servicebusOptions.TopicName, _servicebusOptions.ServiceBusNamespace);
         else
         {
-            if (string.IsNullOrEmpty(_queuesOptions.QueueAccountConnectionString))
-                throw new ArgumentException($"{nameof(_queuesOptions.QueueAccountUri)} or {nameof(_queuesOptions.QueueAccountConnectionString)} required");
+            if (string.IsNullOrEmpty(_servicebusOptions.ServiceBusConnectionString))
+                throw new ArgumentException($"{nameof(_servicebusOptions.ServiceBusNamespace)} or {nameof(_servicebusOptions.ServiceBusConnectionString)} required");
 
-            services.AddQueueManager(_queuesOptions.QueueName, _queuesOptions.QueueAccountConnectionString);
+            services.AddMessageManagerConnectionString(_servicebusOptions.TopicName, _servicebusOptions.ServiceBusConnectionString);
         }
     })
     .Build();
